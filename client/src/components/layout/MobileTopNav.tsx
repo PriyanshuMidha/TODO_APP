@@ -1,16 +1,25 @@
 import { NavLink } from "react-router-dom";
+import { useShellMode } from "./ShellModeContext";
 
-const mobileNavItems = [
-  { label: "Today", path: "/app/today" },
-  { label: "Tasks", path: "/app/tasks" },
-  { label: "Pinned", path: "/app/pinned" },
-  { label: "Settings", path: "/app/settings" }
-];
+export const MobileTopNav = () => {
+  const { basePath, forceMobile, isCompactDesktop } = useShellMode();
+  const mobileNavItems = [
+    { label: "Today", path: `${basePath}/today` },
+    { label: "Tasks", path: `${basePath}/tasks` },
+    { label: "Pinned", path: `${basePath}/pinned` },
+    { label: "Settings", path: `${basePath}/settings` }
+  ];
 
-export const MobileTopNav = () => (
-  <div className="mobile-top-nav fixed left-3 right-3 z-50 md:hidden">
-    <nav className="grid grid-cols-4 gap-2 rounded-[22px] border border-border bg-card/95 p-2 shadow-panel backdrop-blur">
-      {mobileNavItems.map((item) => (
+  return (
+    <div
+      className={
+        isCompactDesktop
+          ? "relative z-20"
+          : `mobile-top-nav fixed left-3 right-3 z-50 ${forceMobile ? "" : "md:hidden"}`
+      }
+    >
+      <nav className="grid grid-cols-4 gap-2 rounded-[22px] border border-border bg-card/95 p-2 shadow-panel backdrop-blur">
+        {mobileNavItems.map((item) => (
         <NavLink
           key={item.path}
           to={item.path}
@@ -24,7 +33,8 @@ export const MobileTopNav = () => (
         >
           {item.label}
         </NavLink>
-      ))}
-    </nav>
-  </div>
-);
+        ))}
+      </nav>
+    </div>
+  );
+};

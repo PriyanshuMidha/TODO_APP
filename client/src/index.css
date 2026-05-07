@@ -26,6 +26,14 @@ body {
   font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
 }
 
+body.sticky-mode {
+  background: transparent;
+}
+
+body.sticky-mode #root {
+  background: transparent;
+}
+
 .mobile-top-nav {
   top: calc(env(safe-area-inset-top) + 12px);
 }

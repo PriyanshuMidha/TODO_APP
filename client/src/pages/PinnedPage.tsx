@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Panel } from "../components/common/Panel";
+import { useShellMode } from "../components/layout/ShellModeContext";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { TaskList } from "../components/tasks/TaskList";
 import { useAppShell } from "../components/layout/AppShellContext";
@@ -7,6 +8,7 @@ import { useAppShell } from "../components/layout/AppShellContext";
 export const PinnedPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { basePath } = useShellMode();
   const { tasks, selectedTaskId, setSelectedTaskId } = useAppShell();
   const pinnedTasks = tasks.filter((task) => task.pinned);
 
@@ -14,7 +16,7 @@ export const PinnedPage = () => {
     setSelectedTaskId(taskId);
 
     if (isMobile) {
-      navigate(`/app/task/${taskId}`);
+      navigate(`${basePath}/task/${taskId}`);
     }
   };
 

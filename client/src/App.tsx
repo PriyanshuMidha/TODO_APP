@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import { CompactLayout } from "./components/layout/CompactLayout";
 import { AppShellProvider } from "./components/layout/AppShellContext";
 import { MobileTaskDetailPage } from "./pages/MobileTaskDetailPage";
 import { PinnedPage } from "./pages/PinnedPage";
@@ -13,6 +14,10 @@ const App = () => (
     <Route path="/" element={<Navigate to="/app/today" replace />} />
     <Route
       path="/sticky"
+      element={<Navigate to="/compact/today" replace />}
+    />
+    <Route
+      path="/legacy-sticky"
       element={
         <AppShellProvider>
           <StickyPage />
@@ -21,6 +26,14 @@ const App = () => (
     />
     <Route path="/app" element={<AppLayout />}>
       <Route index element={<Navigate to="/app/today" replace />} />
+      <Route path="today" element={<TodayPage />} />
+      <Route path="tasks" element={<TasksPage />} />
+      <Route path="pinned" element={<PinnedPage />} />
+      <Route path="settings" element={<SettingsPage />} />
+      <Route path="task/:taskId" element={<MobileTaskDetailPage />} />
+    </Route>
+    <Route path="/compact" element={<CompactLayout />}>
+      <Route index element={<Navigate to="/compact/today" replace />} />
       <Route path="today" element={<TodayPage />} />
       <Route path="tasks" element={<TasksPage />} />
       <Route path="pinned" element={<PinnedPage />} />

@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState } from "../components/common/EmptyState";
 import { useAppShell } from "../components/layout/AppShellContext";
+import { useShellMode } from "../components/layout/ShellModeContext";
 import { TaskWorkspace } from "../components/tasks/TaskWorkspace";
 
 export const MobileTaskDetailPage = () => {
   const navigate = useNavigate();
+  const { basePath } = useShellMode();
   const { taskId } = useParams<{ taskId: string }>();
   const { tasks, settings, saveTask, deleteTask } = useAppShell();
   const task = useMemo(
@@ -35,7 +37,7 @@ export const MobileTaskDetailPage = () => {
         onPatchTask={(payload) => void saveTask(task._id, payload)}
         onDelete={() => {
           void deleteTask(task._id);
-          navigate("/app/tasks");
+          navigate(`${basePath}/tasks`);
         }}
         topAction={
           <button
@@ -44,7 +46,7 @@ export const MobileTaskDetailPage = () => {
               if (window.history.length > 1) {
                 navigate(-1);
               } else {
-                navigate("/app/tasks");
+                navigate(`${basePath}/tasks`);
               }
             }}
             className="text-xs font-semibold uppercase tracking-[0.24em] text-textSecondary"

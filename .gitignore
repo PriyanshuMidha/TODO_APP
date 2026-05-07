@@ -3,3 +3,15 @@ dist
 .DS_Store
 .env
 coverage
+*.tsbuildinfo
+
+client/dist
+server/dist
+
+client/android/.gradle
+client/android/.idea
+client/android/local.properties
+client/android/app/build
+
+client/src-tauri/target
+client/src-tauri/gen

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Panel } from "../components/common/Panel";
+import { useShellMode } from "../components/layout/ShellModeContext";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { TaskList } from "../components/tasks/TaskList";
 import { useAppShell } from "../components/layout/AppShellContext";
@@ -35,6 +36,7 @@ const Section = ({
 export const TodayPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { basePath } = useShellMode();
   const { tasks, setSelectedTaskId } = useAppShell();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -64,7 +66,7 @@ export const TodayPage = () => {
     setSelectedTaskId(taskId);
 
     if (isMobile) {
-      navigate(`/app/task/${taskId}`);
+      navigate(`${basePath}/task/${taskId}`);
     }
   };
 

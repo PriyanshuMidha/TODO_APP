@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Button } from "../components/common/Button";
 import { EmptyState } from "../components/common/EmptyState";
 import { Input, Textarea } from "../components/common/Input";
 import { Panel } from "../components/common/Panel";
@@ -23,7 +23,9 @@ export const StickyPage = () => {
   );
 
   useEffect(() => {
-    const enableAlwaysOnTop = async () => {
+    document.body.classList.add("sticky-mode");
+
+    const setupStickyWindow = async () => {
       const tauriWindow = window as Window & {
         __TAURI__?: unknown;
         __TAURI_INTERNALS__?: unknown;
@@ -42,31 +44,136 @@ export const StickyPage = () => {
 
         if (appWindow) {
           await appWindow.setAlwaysOnTop(true);
+          await appWindow.setVisibleOnAllWorkspaces(true);
+          await appWindow.setSizeConstraints({
+            minWidth: 320,
+            minHeight: 380,
+            maxWidth: 700,
+            maxHeight: 900
+          });
         }
       } catch (error) {
-        console.error("Unable to enable sticky window mode", error);
+        console.error("Unable to fully configure sticky window mode", error);
       }
     };
 
-    void enableAlwaysOnTop();
+    void setupStickyWindow();
+
+    return () => {
+      document.body.classList.remove("sticky-mode");
+    };
   }, []);
 
+  const withStickyWindow = async (
+    action: (appWindow: {
+      close: () => Promise<void>;
+      minimize: () => Promise<void>;
+      hide: () => Promise<void>;
+    }) => Promise<void>
+  ) => {
+    const tauriWindow = window as Window & {
+      __TAURI__?: unknown;
+      __TAURI_INTERNALS__?: unknown;
+    };
+
+    if (!tauriWindow.__TAURI__ && !tauriWindow.__TAURI_INTERNALS__) {
+      return;
+    }
+
+    try {
+      const windowModule = await import("@tauri-apps/api/window");
+      const appWindow =
+        "getCurrentWindow" in windowModule
+          ? windowModule.getCurrentWindow()
+          : null;
+
+      if (appWindow) {
+        await action(appWindow);
+      }
+    } catch (error) {
+      console.error("Sticky window action failed", error);
+    }
+  };
+
+  const openFullApp = async () => {
+    const tauriWindow = window as Window & {
+      __TAURI__?: unknown;
+      __TAURI_INTERNALS__?: unknown;
+    };
+
+    if (!tauriWindow.__TAURI__ && !tauriWindow.__TAURI_INTERNALS__) {
+      window.location.href = "/app/tasks";
+      return;
+    }
+
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("open_focusdock");
+    } catch (error) {
+      console.error("Unable to open full FocusDock app", error);
+      window.location.href = "/app/tasks";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background p-3">
-      <Panel className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[360px] flex-col rounded-[24px] p-4">
-        <div className="mb-3 rounded-xl border border-border bg-background/70 px-3 py-2">
-          <div className="text-[11px] uppercase tracking-[0.28em] text-textSecondary">
-            Sticky FocusDock
+    <div className="min-h-screen bg-transparent p-3">
+      <Panel className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[420px] flex-col rounded-[28px] border border-white/8 bg-[#101010]/94 p-3 shadow-[0_26px_70px_rgba(0,0,0,0.48)] backdrop-blur-xl">
+        <div className="mb-3 rounded-[22px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)),linear-gradient(135deg,rgba(139,92,246,0.14),rgba(139,92,246,0.02))] px-3 py-3">
+          <div
+            data-tauri-drag-region
+            className="mb-2 flex items-center justify-between rounded-2xl border border-white/5 bg-background/20 px-3 py-2"
+          >
+            <div className="text-[10px] uppercase tracking-[0.32em] text-textSecondary">
+              Drag Widget
+            </div>
+            <div className="h-1.5 w-16 rounded-full bg-white/10" />
           </div>
-          <div className="mt-1 text-sm font-semibold text-textPrimary">
-            Quick capture and pinned work
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-[0.32em] text-textSecondary">
+                FocusDock
+              </div>
+              <div className="mt-1 text-sm font-semibold text-textPrimary">
+                Sticky Widget
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void openFullApp()}
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-textPrimary transition hover:border-accent"
+              >
+                Full App
+              </button>
+              <button
+                type="button"
+                onClick={() => void withStickyWindow((appWindow) => appWindow.minimize())}
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-textSecondary transition hover:text-textPrimary"
+              >
+                Hide
+              </button>
+              <button
+                type="button"
+                onClick={() => void withStickyWindow((appWindow) => appWindow.close())}
+                className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs font-semibold text-danger transition hover:bg-danger/20"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
 
-        <QuickAddTask onCreate={createTask} label="Quick Add" />
+        <div className="rounded-[22px] border border-white/5 bg-background/70 p-3">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.28em] text-textSecondary">
+            Quick Add
+          </div>
+          <QuickAddTask onCreate={createTask} label="Add" />
+        </div>
 
-        <div className="mt-4 space-y-3">
-          <div className="text-xs uppercase tracking-[0.24em] text-textSecondary">
+        <div className="mt-3 space-y-2">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-textSecondary">
             Pinned or Current
           </div>
           {stickyTasks.length ? (
@@ -89,21 +196,21 @@ export const StickyPage = () => {
           )}
         </div>
 
-        <div className="mt-4 flex-1 overflow-auto">
-          <div className="text-xs uppercase tracking-[0.24em] text-textSecondary">
-            Selected Notes
+        <div className="mt-3 flex-1 overflow-auto rounded-[22px] border border-white/5 bg-background/70 p-3">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-textSecondary">
+            Quick Notes
           </div>
           {selectedTask ? (
             <div className="mt-2 space-y-2">
               <Input
-                className="border-0 bg-transparent px-0 py-0 text-lg font-semibold"
+                className="border-0 bg-transparent px-0 py-0 text-base font-semibold"
                 value={selectedTask.title}
                 onChange={(event) =>
                   void saveTask(selectedTask._id, { title: event.target.value })
                 }
               />
               <Textarea
-                className="min-h-[160px] rounded-[18px] bg-background/75"
+                className="min-h-[150px] rounded-[18px] border-white/5 bg-[#121212]"
                 value={selectedTask.notes}
                 onChange={(event) =>
                   void saveTask(selectedTask._id, { notes: event.target.value })
@@ -117,13 +224,6 @@ export const StickyPage = () => {
             </div>
           )}
         </div>
-
-        <Link
-          to="/app/tasks"
-          className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-textPrimary transition hover:border-accent"
-        >
-          Open Full App
-        </Link>
       </Panel>
     </div>
   );

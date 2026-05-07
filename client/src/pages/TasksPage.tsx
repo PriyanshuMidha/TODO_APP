@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Panel } from "../components/common/Panel";
+import { useShellMode } from "../components/layout/ShellModeContext";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { QuickAddTask } from "../components/tasks/QuickAddTask";
 import { TaskList } from "../components/tasks/TaskList";
@@ -8,13 +9,14 @@ import { useAppShell } from "../components/layout/AppShellContext";
 export const TasksPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { basePath } = useShellMode();
   const { tasks, selectedTaskId, setSelectedTaskId, createTask } = useAppShell();
 
   const selectTask = (taskId: string) => {
     setSelectedTaskId(taskId);
 
     if (isMobile) {
-      navigate(`/app/task/${taskId}`);
+      navigate(`${basePath}/task/${taskId}`);
     }
   };
 
