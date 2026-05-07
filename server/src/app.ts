@@ -9,7 +9,22 @@ export const app = express();
 
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (
+        origin === env.clientUrl ||
+        origin.startsWith("chrome-extension://")
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true
   })
 );

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FocusDock</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <div class="popup__eyebrow">FocusDock</div>
+        <h1>Quick Save</h1>
+      </header>
+
+      <label class="field">
+        <span>Task Title</span>
+        <input id="title" type="text" placeholder="What needs doing?" />
+      </label>
+
+      <label class="field">
+        <span>Notes</span>
+        <textarea id="notes" rows="6" placeholder="Add context, links, or quick notes..."></textarea>
+      </label>
+
+      <div class="actions">
+        <button id="save-task" class="button button--primary">Save Task</button>
+        <button id="save-tab" class="button button--secondary">Save Current Tab</button>
+      </div>
+
+      <p id="message" class="message" role="status"></p>
+    </main>
+
+    <script src="./popup.js"></script>
+  </body>
+  </html>
