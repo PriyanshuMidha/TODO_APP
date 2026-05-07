@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "FocusDock",
+  "version": "0.1.0",
+  "identifier": "com.priyanshu.focusdock",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "FocusDock",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 980,
+        "minHeight": 720,
+        "resizable": true
+      },
+      {
+        "label": "sticky",
+        "title": "FocusDock Sticky",
+        "url": "/sticky",
+        "width": 360,
+        "height": 460,
+        "minWidth": 320,
+        "minHeight": 420,
+        "resizable": true,
+        "alwaysOnTop": true,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}

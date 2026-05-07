@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FocusDock</string>
+    <string name="title_activity_main">FocusDock</string>
+    <string name="package_name">com.priyanshu.focusdock</string>
+    <string name="custom_url_scheme">com.priyanshu.focusdock</string>
+</resources>
