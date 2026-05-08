@@ -45,7 +45,9 @@ export const TasksPage = () => {
         {taskError ? (
           <div className="space-y-3 rounded-[22px] border border-danger/30 bg-danger/10 p-4">
             <div className="text-sm font-semibold text-danger">Unable to load tasks</div>
-            <div className="text-sm text-textSecondary">{taskError}</div>
+            <div className="text-sm text-textSecondary">URL: {taskError.url ?? "Unknown"}</div>
+            <div className="text-sm text-textSecondary">Status: {taskError.status ?? "Failed fetch"}</div>
+            <div className="text-sm text-textSecondary">Message: {taskError.message}</div>
             <Button variant="secondary" onClick={() => void refreshAll()}>
               Retry
             </Button>
@@ -85,7 +87,9 @@ export const TasksPage = () => {
         {taskError ? (
           <div className="space-y-3 rounded-[24px] border border-danger/30 bg-danger/10 p-4">
             <div className="text-base font-semibold text-danger">Unable to load tasks</div>
-            <div className="text-sm text-textSecondary">{taskError}</div>
+            <div className="text-sm text-textSecondary">URL: {taskError.url ?? "Unknown"}</div>
+            <div className="text-sm text-textSecondary">Status: {taskError.status ?? "Failed fetch"}</div>
+            <div className="text-sm text-textSecondary">Message: {taskError.message}</div>
             <Button variant="secondary" onClick={() => void refreshAll()}>
               Retry
             </Button>

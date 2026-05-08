@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../common/Button";
 import { Input, Textarea } from "../common/Input";
 import { Panel } from "../common/Panel";
@@ -64,6 +64,41 @@ export const TaskWorkspace = ({
   compact = false,
   fullScreenMobile = false
 }: TaskWorkspaceProps) => {
+  const [titleDraft, setTitleDraft] = useState(task.title);
+  const [notesDraft, setNotesDraft] = useState(task.notes);
+  const [descriptionDraft, setDescriptionDraft] = useState(task.description);
+  const [tagsDraft, setTagsDraft] = useState(task.tags.join(", "));
+  const saveTimeouts = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    setTitleDraft(task.title);
+    setNotesDraft(task.notes);
+    setDescriptionDraft(task.description);
+    setTagsDraft(task.tags.join(", "));
+  }, [task._id, task.title, task.notes, task.description, task.tags]);
+
+  useEffect(
+    () => () => {
+      Object.values(saveTimeouts.current).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+    },
+    []
+  );
+
+  const queuePatch = (key: string, payload: Partial<Task>, delay = 250) => {
+    const currentTimeout = saveTimeouts.current[key];
+
+    if (currentTimeout) {
+      window.clearTimeout(currentTimeout);
+    }
+
+    saveTimeouts.current[key] = window.setTimeout(() => {
+      onPatchTask(payload);
+      delete saveTimeouts.current[key];
+    }, delay);
+  };
+
   const updateSubtasks = (subtasks: Subtask[]) => onPatchTask({ subtasks });
   const completedCount = task.subtasks.filter((subtask) => subtask.completed).length;
 
@@ -80,8 +115,12 @@ export const TaskWorkspace = ({
           {topAction}
           <Input
             className="mt-2 border-0 bg-transparent px-0 py-0 text-2xl font-bold text-textPrimary focus:border-0 md:text-[30px]"
-            value={task.title}
-            onChange={(event) => onPatchTask({ title: event.target.value })}
+            value={titleDraft}
+            onChange={(event) => {
+              const nextTitle = event.target.value;
+              setTitleDraft(nextTitle);
+              queuePatch("title", { title: nextTitle });
+            }}
             placeholder="Task title"
           />
         </div>
@@ -106,8 +145,12 @@ export const TaskWorkspace = ({
         </div>
         <Textarea
           className={`rounded-[20px] border-border bg-background/75 px-4 py-4 text-sm leading-7 ${compact ? "min-h-[42vh]" : "min-h-[38vh] md:min-h-[54vh]"}`}
-          value={task.notes}
-          onChange={(event) => onPatchTask({ notes: event.target.value })}
+          value={notesDraft}
+          onChange={(event) => {
+            const nextNotes = event.target.value;
+            setNotesDraft(nextNotes);
+            queuePatch("notes", { notes: nextNotes });
+          }}
           placeholder="Capture debugging notes, meeting notes, links, logs, thoughts, next steps, and anything else needed to finish this task."
         />
       </div>
@@ -178,8 +221,12 @@ export const TaskWorkspace = ({
               </div>
               <Textarea
                 className="min-h-20"
-                value={task.description}
-                onChange={(event) => onPatchTask({ description: event.target.value })}
+                value={descriptionDraft}
+                onChange={(event) => {
+                  const nextDescription = event.target.value;
+                  setDescriptionDraft(nextDescription);
+                  queuePatch("description", { description: nextDescription });
+                }}
                 placeholder="Short summary of the task."
               />
             </div>
@@ -305,15 +352,17 @@ export const TaskWorkspace = ({
                 Tags
               </div>
               <Input
-                value={task.tags.join(", ")}
-                onChange={(event) =>
-                  onPatchTask({
+                value={tagsDraft}
+                onChange={(event) => {
+                  const nextTagsDraft = event.target.value;
+                  setTagsDraft(nextTagsDraft);
+                  queuePatch("tags", {
                     tags: event.target.value
                       .split(",")
                       .map((tag) => tag.trim())
                       .filter(Boolean)
-                  })
-                }
+                  });
+                }}
                 placeholder="bug, follow-up, client"
               />
             </div>

@@ -7,14 +7,21 @@ import {
   type ReactNode
 } from "react";
 import { settingsService } from "../../services/settingsService";
+import { ApiError } from "../../services/api";
 import { taskService } from "../../services/taskService";
 import type { Settings, Task } from "../../types";
+
+interface TaskErrorState {
+  message: string;
+  status?: number;
+  url?: string;
+}
 
 interface AppShellContextValue {
   tasks: Task[];
   settings: Settings | null;
   loading: boolean;
-  taskError: string | null;
+  taskError: TaskErrorState | null;
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
   refreshAll: () => Promise<void>;
@@ -31,8 +38,28 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [taskError, setTaskError] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState<TaskErrorState | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const toTaskError = (error: unknown, fallbackMessage: string): TaskErrorState => {
+    if (error instanceof ApiError) {
+      return {
+        message: error.message || fallbackMessage,
+        status: error.status,
+        url: error.requestUrl
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        message: error.message || fallbackMessage
+      };
+    }
+
+    return {
+      message: fallbackMessage
+    };
+  };
 
   const refreshTasks = async (preferredTaskId?: string | null) => {
     try {
@@ -54,9 +81,7 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
 
       return taskResponse.tasks;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to load tasks";
-      setTaskError(message);
+      setTaskError(toTaskError(error, "Unable to load tasks"));
       throw error;
     }
   };
@@ -98,7 +123,7 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await taskService.create({
         title,
-        description: "",
+        description: "Open to add task context and working notes.",
         notes: "",
         priority: "medium",
         status: "todo",
@@ -112,9 +137,7 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
       console.log("Create task response:", response);
       await refreshTasks(response.task._id);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to create task";
-      setTaskError(message);
+      setTaskError(toTaskError(error, "Unable to create task"));
       console.error("Create task failed:", error);
       throw error;
     }
