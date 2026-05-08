@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import { EmptyState } from "../components/common/EmptyState";
+import { Button } from "../components/common/Button";
 import { Panel } from "../components/common/Panel";
 import { useShellMode } from "../components/layout/ShellModeContext";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -10,7 +12,15 @@ export const TasksPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { basePath } = useShellMode();
-  const { tasks, selectedTaskId, setSelectedTaskId, createTask } = useAppShell();
+  const {
+    tasks,
+    loading,
+    taskError,
+    selectedTaskId,
+    setSelectedTaskId,
+    createTask,
+    refreshAll
+  } = useAppShell();
 
   const selectTask = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -32,12 +42,28 @@ export const TasksPage = () => {
 
         <QuickAddTask onCreate={createTask} />
 
-        <TaskList
-          tasks={tasks}
-          selectedTaskId={selectedTaskId}
-          onSelect={selectTask}
-          compactEmpty
-        />
+        {taskError ? (
+          <div className="space-y-3 rounded-[22px] border border-danger/30 bg-danger/10 p-4">
+            <div className="text-sm font-semibold text-danger">Unable to load tasks</div>
+            <div className="text-sm text-textSecondary">{taskError}</div>
+            <Button variant="secondary" onClick={() => void refreshAll()}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
+          <EmptyState
+            compact
+            title="Loading tasks..."
+            description="Fetching your latest tasks from FocusDock."
+          />
+        ) : (
+          <TaskList
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onSelect={selectTask}
+            compactEmpty
+          />
+        )}
       </div>
     );
   }
@@ -56,11 +82,26 @@ export const TasksPage = () => {
       </div>
 
       <div className="mt-4 lg:mt-6">
-        <TaskList
-          tasks={tasks}
-          selectedTaskId={selectedTaskId}
-          onSelect={selectTask}
-        />
+        {taskError ? (
+          <div className="space-y-3 rounded-[24px] border border-danger/30 bg-danger/10 p-4">
+            <div className="text-base font-semibold text-danger">Unable to load tasks</div>
+            <div className="text-sm text-textSecondary">{taskError}</div>
+            <Button variant="secondary" onClick={() => void refreshAll()}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
+          <EmptyState
+            title="Loading tasks..."
+            description="Fetching your latest tasks from FocusDock."
+          />
+        ) : (
+          <TaskList
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onSelect={selectTask}
+          />
+        )}
       </div>
     </Panel>
   );

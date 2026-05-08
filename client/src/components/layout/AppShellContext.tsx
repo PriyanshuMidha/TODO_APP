@@ -14,6 +14,7 @@ interface AppShellContextValue {
   tasks: Task[];
   settings: Settings | null;
   loading: boolean;
+  taskError: string | null;
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
   refreshAll: () => Promise<void>;
@@ -30,19 +31,58 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [taskError, setTaskError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const refreshTasks = async (preferredTaskId?: string | null) => {
+    try {
+      const taskResponse = await taskService.list();
+      setTaskError(null);
+      setTasks(taskResponse.tasks);
+      setSelectedTaskId((current) => {
+        const nextSelectedTaskId = preferredTaskId ?? current;
+
+        if (
+          nextSelectedTaskId &&
+          taskResponse.tasks.some((task) => task._id === nextSelectedTaskId)
+        ) {
+          return nextSelectedTaskId;
+        }
+
+        return taskResponse.tasks[0]?._id ?? null;
+      });
+
+      return taskResponse.tasks;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to load tasks";
+      setTaskError(message);
+      throw error;
+    }
+  };
+
+  const refreshSettings = async () => {
+    const settingsResponse = await settingsService.get();
+    setSettings(settingsResponse.settings);
+    return settingsResponse.settings;
+  };
 
   const refreshAll = async () => {
     setLoading(true);
 
     try {
-      const [taskResponse, settingsResponse] = await Promise.all([
-        taskService.list(),
-        settingsService.get()
+      const [tasksResult, settingsResult] = await Promise.allSettled([
+        refreshTasks(),
+        refreshSettings()
       ]);
-      setTasks(taskResponse.tasks);
-      setSettings(settingsResponse.settings);
-      setSelectedTaskId((current) => current ?? taskResponse.tasks[0]?._id ?? null);
+
+      if (tasksResult.status === "rejected") {
+        console.error("Unable to load tasks", tasksResult.reason);
+      }
+
+      if (settingsResult.status === "rejected") {
+        console.error("Unable to load settings", settingsResult.reason);
+      }
     } finally {
       setLoading(false);
     }
@@ -53,21 +93,31 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const createTask = async (title: string) => {
-    const response = await taskService.create({
-      title,
-      description: "",
-      notes: "",
-      priority: "medium",
-      status: "todo",
-      reminderEnabled: false,
-      reminderBeforeMinutes: settings?.defaultReminderBeforeMinutes ?? 15,
-      pinned: false,
-      subtasks: [],
-      tags: []
-    });
+    console.log("Creating task:", title);
 
-    setTasks((current) => [response.task, ...current]);
-    setSelectedTaskId(response.task._id);
+    try {
+      const response = await taskService.create({
+        title,
+        description: "",
+        notes: "",
+        priority: "medium",
+        status: "todo",
+        reminderEnabled: false,
+        reminderBeforeMinutes: settings?.defaultReminderBeforeMinutes ?? 15,
+        pinned: false,
+        subtasks: [],
+        tags: []
+      });
+
+      console.log("Create task response:", response);
+      await refreshTasks(response.task._id);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to create task";
+      setTaskError(message);
+      console.error("Create task failed:", error);
+      throw error;
+    }
   };
 
   const saveTask = async (taskId: string, payload: Partial<Task>) => {
@@ -100,6 +150,7 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
       tasks,
       settings,
       loading,
+      taskError,
       selectedTaskId,
       setSelectedTaskId,
       refreshAll,
@@ -109,7 +160,7 @@ export const AppShellProvider = ({ children }: { children: ReactNode }) => {
       deleteTask,
       saveSettings
     }),
-    [tasks, settings, loading, selectedTaskId]
+    [tasks, settings, loading, taskError, selectedTaskId]
   );
 
   return (

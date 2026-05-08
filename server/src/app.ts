@@ -7,6 +7,25 @@ import { errorHandler } from "./middleware/errorHandler";
 
 export const app = express();
 
+const localhostPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
+const allowedOriginSet = new Set([
+  ...env.clientUrls,
+  "https://focusdock-web.onrender.com",
+  "tauri://localhost",
+  "http://tauri.localhost",
+  "https://tauri.localhost",
+  "capacitor://localhost",
+  "ionic://localhost",
+  "http://localhost",
+  "https://localhost"
+]);
+
+const isAllowedOrigin = (origin: string) =>
+  allowedOriginSet.has(origin) ||
+  origin.startsWith("chrome-extension://") ||
+  localhostPattern.test(origin);
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -15,10 +34,7 @@ app.use(
         return;
       }
 
-      if (
-        origin === env.clientUrl ||
-        origin.startsWith("chrome-extension://")
-      ) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }

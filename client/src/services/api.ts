@@ -15,8 +15,9 @@ export const apiRequest = async <T>(
 ): Promise<T> => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
+  const requestUrl = `${API_BASE_URL}${path}`;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(requestUrl, {
     ...init,
     headers
   });
@@ -25,6 +26,12 @@ export const apiRequest = async <T>(
     const data = (await response.json().catch(() => null)) as
       | { message?: string }
       | null;
+    console.error("API request failed:", {
+      path,
+      requestUrl,
+      status: response.status,
+      message: data?.message ?? "Request failed"
+    });
     throw new ApiError(data?.message ?? "Request failed", response.status);
   }
 
