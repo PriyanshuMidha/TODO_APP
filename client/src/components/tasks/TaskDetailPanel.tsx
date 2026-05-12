@@ -23,7 +23,7 @@ export const TaskDetailPanel = () => {
     <TaskWorkspace
       task={task}
       settings={settings}
-      onPatchTask={(payload) => void saveTask(task._id, payload)}
+      onPatchTask={(payload) => saveTask(task._id, payload)}
       onDelete={() => void deleteTask(task._id)}
       topAction={
         <div className="text-[11px] uppercase tracking-[0.3em] text-textSecondary">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/common/Button";
 import { EmptyState } from "../components/common/EmptyState";
 import { Input, Textarea } from "../components/common/Input";
@@ -7,8 +7,12 @@ import { QuickAddTask } from "../components/tasks/QuickAddTask";
 import { TaskCard } from "../components/tasks/TaskCard";
 import { useAppShell } from "../components/layout/AppShellContext";
 
+type NotesSaveStatus = "idle" | "saving" | "saved" | "failed";
+
 export const StickyPage = () => {
   const { tasks, selectedTaskId, createTask, saveTask, setSelectedTaskId } = useAppShell();
+  const [draftNotes, setDraftNotes] = useState("");
+  const [notesSaveStatus, setNotesSaveStatus] = useState<NotesSaveStatus>("idle");
   const stickyTasks = useMemo(
     () => tasks.filter((task) => task.pinned || task.status === "in_progress").slice(0, 4),
     [tasks]
@@ -21,6 +25,11 @@ export const StickyPage = () => {
     () => tasks.find((task) => task._id === selectedTaskId) ?? primaryTask,
     [tasks, selectedTaskId, primaryTask]
   );
+
+  useEffect(() => {
+    setDraftNotes(selectedTask?.notes ?? "");
+    setNotesSaveStatus("idle");
+  }, [selectedTask?._id, selectedTask?.notes]);
 
   useEffect(() => {
     document.body.classList.add("sticky-mode");
@@ -115,6 +124,35 @@ export const StickyPage = () => {
     }
   };
 
+  const hasPendingNotesChanges = draftNotes !== (selectedTask?.notes ?? "");
+
+  const saveNotes = async () => {
+    if (!selectedTask || !hasPendingNotesChanges || notesSaveStatus === "saving") {
+      return;
+    }
+
+    setNotesSaveStatus("saving");
+
+    try {
+      await saveTask(selectedTask._id, { notes: draftNotes });
+      setNotesSaveStatus("saved");
+    } catch (error) {
+      console.error("Unable to save sticky notes", error);
+      setNotesSaveStatus("failed");
+    }
+  };
+
+  const notesStatusLabel =
+    notesSaveStatus === "saving"
+      ? "Saving..."
+      : notesSaveStatus === "saved"
+        ? "Saved"
+        : notesSaveStatus === "failed"
+          ? "Failed to save"
+          : hasPendingNotesChanges
+            ? "Unsaved changes"
+            : "Saved";
+
   return (
     <div className="min-h-screen bg-transparent p-3">
       <Panel className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[420px] flex-col rounded-[28px] border border-white/8 bg-[#101010]/94 p-3 shadow-[0_26px_70px_rgba(0,0,0,0.48)] backdrop-blur-xl">
@@ -197,8 +235,11 @@ export const StickyPage = () => {
         </div>
 
         <div className="mt-3 flex-1 overflow-auto rounded-[22px] border border-white/5 bg-background/70 p-3">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-textSecondary">
-            Quick Notes
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-textSecondary">
+              Quick Notes
+            </div>
+            <div className="text-xs text-textSecondary">{notesStatusLabel}</div>
           </div>
           {selectedTask ? (
             <div className="mt-2 space-y-2">
@@ -211,12 +252,22 @@ export const StickyPage = () => {
               />
               <Textarea
                 className="min-h-[150px] rounded-[18px] border-white/5 bg-[#121212]"
-                value={selectedTask.notes}
-                onChange={(event) =>
-                  void saveTask(selectedTask._id, { notes: event.target.value })
-                }
+                value={draftNotes}
+                onChange={(event) => {
+                  setDraftNotes(event.target.value);
+                  setNotesSaveStatus("idle");
+                }}
                 placeholder="Add quick notes for the selected sticky task."
               />
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => void saveNotes()}
+                  disabled={!hasPendingNotesChanges || notesSaveStatus === "saving"}
+                  variant={notesSaveStatus === "failed" ? "danger" : "primary"}
+                >
+                  {notesSaveStatus === "saving" ? "Saving Notes..." : "Save Notes"}
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="mt-2 rounded-[18px] border border-dashed border-border p-4 text-sm text-textSecondary">

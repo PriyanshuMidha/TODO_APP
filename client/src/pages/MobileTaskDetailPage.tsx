@@ -34,7 +34,7 @@ export const MobileTaskDetailPage = () => {
         fullScreenMobile
         task={task}
         settings={settings}
-        onPatchTask={(payload) => void saveTask(task._id, payload)}
+        onPatchTask={(payload) => saveTask(task._id, payload)}
         onDelete={() => {
           void deleteTask(task._id);
           navigate(`${basePath}/tasks`);

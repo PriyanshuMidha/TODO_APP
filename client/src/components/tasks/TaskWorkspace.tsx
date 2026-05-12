@@ -6,6 +6,8 @@ import type { Settings, Subtask, Task } from "../../types";
 import { taskPriorities, taskStatuses } from "../../utils/constants";
 import { formatDateLabel, getStatusLabel } from "../../utils/format";
 
+type NotesSaveStatus = "idle" | "saving" | "saved" | "failed";
+
 const Accordion = ({
   title,
   defaultOpen = false,
@@ -48,7 +50,7 @@ const SummaryChip = ({
 interface TaskWorkspaceProps {
   task: Task;
   settings: Settings | null;
-  onPatchTask: (payload: Partial<Task>) => void;
+  onPatchTask: (payload: Partial<Task>) => Promise<void>;
   onDelete: () => void;
   topAction?: ReactNode;
   compact?: boolean;
@@ -66,6 +68,7 @@ export const TaskWorkspace = ({
 }: TaskWorkspaceProps) => {
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [notesDraft, setNotesDraft] = useState(task.notes);
+  const [notesSaveStatus, setNotesSaveStatus] = useState<NotesSaveStatus>("idle");
   const [descriptionDraft, setDescriptionDraft] = useState(task.description);
   const [tagsDraft, setTagsDraft] = useState(task.tags.join(", "));
   const saveTimeouts = useRef<Record<string, number>>({});
@@ -73,6 +76,7 @@ export const TaskWorkspace = ({
   useEffect(() => {
     setTitleDraft(task.title);
     setNotesDraft(task.notes);
+    setNotesSaveStatus("idle");
     setDescriptionDraft(task.description);
     setTagsDraft(task.tags.join(", "));
   }, [task._id, task.title, task.notes, task.description, task.tags]);
@@ -101,6 +105,34 @@ export const TaskWorkspace = ({
 
   const updateSubtasks = (subtasks: Subtask[]) => onPatchTask({ subtasks });
   const completedCount = task.subtasks.filter((subtask) => subtask.completed).length;
+  const hasPendingNotesChanges = notesDraft !== task.notes;
+
+  const saveNotes = async () => {
+    if (!hasPendingNotesChanges || notesSaveStatus === "saving") {
+      return;
+    }
+
+    setNotesSaveStatus("saving");
+
+    try {
+      await onPatchTask({ notes: notesDraft });
+      setNotesSaveStatus("saved");
+    } catch (error) {
+      console.error("Unable to save task notes", error);
+      setNotesSaveStatus("failed");
+    }
+  };
+
+  const notesStatusLabel =
+    notesSaveStatus === "saving"
+      ? "Saving..."
+      : notesSaveStatus === "saved"
+        ? "Saved"
+        : notesSaveStatus === "failed"
+          ? "Failed to save"
+          : hasPendingNotesChanges
+            ? "Unsaved changes"
+            : "Saved";
 
   return (
     <Panel
@@ -140,19 +172,30 @@ export const TaskWorkspace = ({
       </div>
 
       <div className="mt-4">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-textSecondary">
-          Notes
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-textSecondary">
+            Notes
+          </div>
+          <div className="text-xs text-textSecondary">{notesStatusLabel}</div>
         </div>
         <Textarea
           className={`rounded-[20px] border-border bg-background/75 px-4 py-4 text-sm leading-7 ${compact ? "min-h-[42vh]" : "min-h-[38vh] md:min-h-[54vh]"}`}
           value={notesDraft}
           onChange={(event) => {
-            const nextNotes = event.target.value;
-            setNotesDraft(nextNotes);
-            queuePatch("notes", { notes: nextNotes });
+            setNotesDraft(event.target.value);
+            setNotesSaveStatus("idle");
           }}
           placeholder="Capture debugging notes, meeting notes, links, logs, thoughts, next steps, and anything else needed to finish this task."
         />
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant={notesSaveStatus === "failed" ? "danger" : "primary"}
+            onClick={() => void saveNotes()}
+            disabled={!hasPendingNotesChanges || notesSaveStatus === "saving"}
+          >
+            {notesSaveStatus === "saving" ? "Saving Notes..." : "Save Notes"}
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 space-y-3">
